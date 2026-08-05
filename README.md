@@ -48,7 +48,7 @@ planning and turbofan degradation with biased free sensors — with tuned
 baselines, paired confidence intervals, raw per-episode data, and a public
 three-round adversarial audit trail, lives here:
 
-**→ [coin-envs](https://github.com/PLACEHOLDER/coin-envs)** · essay: [PLACEHOLDER]
+**→ [coin-envs](https://github.com/PaulAero/coin-envs)** · essay: coming soon
 
 ## Rules of the leaderboard
 

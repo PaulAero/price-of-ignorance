@@ -11,7 +11,7 @@ The idea in one line: safe RL made the cost of *violating a constraint* a
 first-class channel of the environment API; nothing ever did that for the
 cost of *information*. This file is the smallest possible demo. The
 serious, audited version (fatigue cracks, turbofans, tuned baselines,
-adversarial audit trail) lives at: https://github.com/PLACEHOLDER/coin-envs
+adversarial audit trail) lives at: https://github.com/PaulAero/coin-envs
 """
 
 import math
