@@ -1,0 +1,21 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python test_ignorance.py
+      - name: held-out scoreboard (seeds 10000-11999)
+        run: |
+          python - <<'EOF'
+          from ignorance import adaptive, check_then_fix, evaluate
+          bar = evaluate(adaptive(), episodes=2000, seed0=10000)
+          ref = evaluate(check_then_fix(3, 0.55), episodes=2000, seed0=10000)
+          print("held-out adaptive:", round(bar["total"], 1))
+          print("held-out check_then_fix:", round(ref["total"], 1))
+          assert bar["total"] < ref["total"] + 10, "bar collapsed on held-out"
+          EOF

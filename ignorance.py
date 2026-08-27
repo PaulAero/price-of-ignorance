@@ -7,9 +7,11 @@ A breakdown costs $500. When is knowing worth its price?
 
 No dependencies. Beat the best baseline, open a PR.
 
-The idea in one line: safe RL made the cost of *violating a constraint* a
-first-class channel of the environment API; nothing ever did that for the
-cost of *information*. This file is the smallest possible demo. The
+The idea in one line: costly observations are an old idea (active sensing,
+ACNO-MDPs); what has no standard home is the COST OF INFORMATION as a
+first-class channel of the environment API, the way safe RL standardized
+the cost of constraint violation. This file is the smallest possible demo
+of that contract. The
 serious, audited version (fatigue cracks, turbofans, tuned baselines,
 adversarial audit trail) lives at: https://github.com/PaulAero/coin-envs
 """
@@ -19,7 +21,7 @@ import random
 
 PRICE_CHECK = 5.0     # a sensor reading (information, not action)
 PRICE_FIX = 50.0      # preventive replacement
-PRICE_FAILURE = 500.0  # breakdown (plus the forced replacement)
+PRICE_FAILURE = 500.0  # breakdown; a forced $50 replacement is added on top
 HORIZON = 50
 WEAR_RATE = 0.030     # median wear per step; every machine draws its own
 RATE_SPREAD = 0.5     # lognormal sigma of that draw (the "bad batch" risk)
@@ -36,11 +38,16 @@ class Machine:
     """
 
     def __init__(self, seed=None):
-        self.rng = random.Random(seed)
+        if seed is None:
+            seed = random.getrandbits(64)
+        # two independent streams: paying to LOOK must never touch the
+        # physics (an epistemic action changes what you know, not the world)
+        self.world = random.Random(f"{seed}-world")
+        self.sensor = random.Random(f"{seed}-sensor")
 
     def reset(self):
         self.wear = 0.0
-        self.rate = self.rng.lognormvariate(math.log(WEAR_RATE), RATE_SPREAD)
+        self.rate = self.world.lognormvariate(math.log(WEAR_RATE), RATE_SPREAD)
         self.t = 0
         return {"t": 0, "reading": None, "failed": False}
 
@@ -54,8 +61,9 @@ class Machine:
         elif action != "run":
             raise ValueError(f"unknown action {action!r}")
 
-        # the world turns whether you look or not (wear accelerates)
-        self.wear += self.rate * (1 + 2 * self.wear) * self.rng.uniform(0.5, 1.5)
+        # the world turns whether you look or not (wear accelerates);
+        # order each step: action effect -> wear -> failure/renewal -> observation
+        self.wear += self.rate * (1 + 2 * self.wear) * self.world.uniform(0.5, 1.5)
         failed = self.wear >= 1.0
         if failed:
             costs["failure"] += PRICE_FAILURE
@@ -63,8 +71,9 @@ class Machine:
             self._renew()
 
         reading = None
-        if action == "check":  # you paid: you get to see (after this step's wear)
-            reading = max(0.0, self.wear + self.rng.gauss(0.0, NOISE))
+        if action == "check":  # you paid: you see the END-of-step state
+            # (if the machine broke this step, you read the fresh part)
+            reading = max(0.0, self.wear + self.sensor.gauss(0.0, NOISE))
 
         self.t += 1
         obs = {"t": self.t, "reading": reading, "failed": failed}
@@ -72,7 +81,7 @@ class Machine:
 
     def _renew(self):
         self.wear = 0.0
-        self.rate = self.rng.lognormvariate(math.log(WEAR_RATE), RATE_SPREAD)
+        self.rate = self.world.lognormvariate(math.log(WEAR_RATE), RATE_SPREAD)
 
 
 # ----------------------------- baselines ------------------------------------
@@ -111,12 +120,30 @@ def tracker(check_at, fix_at):
         if obs["reading"] is not None:
             state["wear"] = obs["reading"]           # trust the paid reading
             if obs["reading"] >= fix_at:
+                state["wear"] = 0.0                   # we fix: fresh part
                 return "fix"
         state["wear"] += state["drift"] * (1 + 2 * state["wear"])
         if state["wear"] >= fix_at:
             state["wear"] = 0.0                       # we are about to fix
             return "fix"
         return "check" if state["wear"] >= check_at else "run"
+    return policy
+
+
+def adaptive(slow=4, fast=2, alert=0.25, fix_at=0.50):
+    """Check slowly; after a worrying reading, check fast; fix early.
+    Found by the adversarial reviewer of this repo — the bar to beat."""
+    def policy(obs, state):
+        k = state.get("k", slow)
+        if obs["failed"]:
+            state["k"] = k = slow
+        r = obs["reading"]
+        if r is not None:
+            if r >= fix_at:
+                state["k"] = slow
+                return "fix"
+            state["k"] = k = fast if r >= alert else slow
+        return "check" if obs["t"] % k == k - 1 else "run"
     return policy
 
 
@@ -144,6 +171,7 @@ if __name__ == "__main__":
         ("clockwork(k=8)", clockwork(8)),
         ("check_then_fix(k=3, 0.55)", check_then_fix(3, 0.55)),
         ("tracker(check@0.35, fix@0.60)", tracker(0.35, 0.60)),
+        ("adaptive(4->2@0.25, fix@0.50)", adaptive()),
     ]
     print(f"{'policy':32s} {'total':>8s} {'doing':>8s} {'knowing':>8s} "
           f"{'failing':>8s} {'fails/ep':>9s}")
