@@ -70,7 +70,7 @@ turbofan degradation with biased free sensors — with tuned baselines, paired
 confidence intervals, raw per-episode data, and a public multi-round
 adversarial audit trail:
 
-**→ [coin-envs](https://github.com/PaulAero/coin-envs)** · essay: coming soon
+**→ [coin-envs](https://github.com/PI-Project-AI/coin-envs)** · essay: coming soon
 
 Built with heavy AI assistance (Claude), adversarially reviewed by another
 model (which found two real bugs in these 170 lines — see the confession

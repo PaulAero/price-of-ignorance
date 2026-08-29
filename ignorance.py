@@ -13,7 +13,7 @@ first-class channel of the environment API, the way safe RL standardized
 the cost of constraint violation. This file is the smallest possible demo
 of that contract. The
 serious, audited version (fatigue cracks, turbofans, tuned baselines,
-adversarial audit trail) lives at: https://github.com/PaulAero/coin-envs
+adversarial audit trail) lives at: https://github.com/PI-Project-AI/coin-envs
 """
 
 import math
