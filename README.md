@@ -75,3 +75,6 @@ adversarial audit trail:
 Built with heavy AI assistance (Claude), adversarially reviewed by another
 model (which found two real bugs in these 170 lines — see the confession
 above — and whose fixes and tests are in the history). MIT.
+
+Questions, submissions that beat the bar, or anything else:
+**paul.provost@pi-project.ai** (or open an issue).
