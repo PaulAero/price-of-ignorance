@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# Private per-repo notes (never committed)
+CLAUDE.local.md
